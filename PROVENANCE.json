@@ -1,0 +1,18 @@
+{
+ "img/hero.jpg": {
+  "tool": "higgsfield",
+  "prompt": "glass-backed squash court with an orange and blue racquet (job 490a8f24) gpt_image_2_5"
+ },
+ "snd/hit.mp3": {
+  "tool": "elevenlabs",
+  "prompt": "squash racquet strike and front wall smack (flow XaFzwGMjzbfdRG9HDYWS)"
+ },
+ "snd/squeak.mp3": {
+  "tool": "elevenlabs",
+  "prompt": "sneaker squeak on hardwood (flow XaFzwGMjzbfdRG9HDYWS)"
+ },
+ "snd/cheer.mp3": {
+  "tool": "elevenlabs",
+  "prompt": "arena crowd cheer (flow XaFzwGMjzbfdRG9HDYWS)"
+ }
+}

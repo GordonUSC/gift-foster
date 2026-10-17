@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- STYLE: Glass-court sport broadcast (maple hardwood, Knicks orange and blue, Barlow Condensed scorebug) | WHY: Foster plays squash chasing a VO2 max above 50 and wants to see Olympic squash at LA 2028, saying "buy the good tickets", so the gift is a rally he plays to ten | ALT: A Knicks shot clock, rejected because squash is the thing he does with his own body every week -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ten Rally</title>
+<meta name="description" content="A squash rally for Foster.">
+<meta property="og:title" content="Ten Rally, for Foster">
+<meta property="og:image" content="https://gordonusc.github.io/gift-foster/img/hero.jpg">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@500;700&display=swap">
+<style>
+:root{--orange:#f58426;--blue:#006bb6;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#120c06;color:#fff;font:16px/1.4 Barlow,system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.stage{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(100vw,calc(100svh*9/16));overflow:hidden}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.top{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 26px;text-align:center;text-shadow:0 2px 12px #000c;pointer-events:none;background:linear-gradient(#0d1a2ce6,#0d1a2c99 70%,#0000)}
+.top small{font:800 12px "Barlow Condensed",sans-serif;letter-spacing:.3em;color:var(--orange)}
+.top h1{font:800 clamp(40px,13vw,60px)/1 "Barlow Condensed",sans-serif;margin:2px 0;text-transform:uppercase}
+.top p{margin:0 auto;max-width:28ch;font-size:15px}
+.bug{position:absolute;left:14px;top:calc(env(safe-area-inset-top,0px) + 160px);display:flex;border-radius:6px;overflow:hidden;font:800 18px "Barlow Condensed",sans-serif;box-shadow:0 4px 14px #0008;pointer-events:none}
+.bug span{padding:4px 10px}
+.bug .a{background:var(--blue)}.bug .b{background:var(--orange);color:#111;min-width:52px;text-align:center}
+.hint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 36px);text-align:center;font:800 14px "Barlow Condensed",sans-serif;letter-spacing:.2em;text-shadow:0 2px 8px #000;pointer-events:none}
+.end{position:absolute;left:16px;right:16px;top:38%;text-align:center;padding:18px;border-radius:14px;background:#0d1a2ccc;border:3px solid var(--orange);opacity:0;transform:translateY(16px);transition:all .6s;pointer-events:none}
+.end.on{opacity:1;transform:none}
+.end h2{font:800 clamp(34px,11vw,48px)/1 "Barlow Condensed",sans-serif;margin:0 0 6px;color:var(--orange)}
+.foot{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);text-align:center;font-size:11px;opacity:.75;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <img class="bg" src="img/hero.jpg" alt="Inside a glass-backed squash court with a maple floor, red lines and a racquet with an orange and blue grip">
+  <canvas id="c"></canvas>
+  <div class="top"><small>FOR FOSTER</small><h1>Ten Rally</h1><p>Tap when the ball comes back into the orange zone. Get to ten. Sound on.</p></div>
+  <div class="bug"><span class="a">RALLY</span><span class="b" id="score">0</span></div>
+  <div class="hint" id="hint">TAP ANYWHERE TO SERVE</div>
+  <div class="end" id="end"><h2>LA28</h2>Ten straight, Foster. Gordon will see you courtside at Olympic squash. Buy the good tickets.</div>
+  <div class="foot">made by Darby, Gordon's AI assistant, with love from Gordon</div>
+</div>
+<script>
+// ElevenLabs sound design: racquet strike and wall smack, shoe squeak, arena cheer. Code only mixes.
+const SND=['hit','squeak','cheer'];
+let ac=null, master=null, bufs={};
+function audio(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=.9; master.connect(ac.destination); SND.forEach(load);}catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); return ac; }
+async function load(n){ if(bufs[n]) return bufs[n]; try{ const r=await fetch('snd/'+n+'.mp3'); const a=await r.arrayBuffer(); bufs[n]=await new Promise((ok,no)=>ac.decodeAudioData(a,ok,no)); }catch(e){} return bufs[n]; }
+async function play(n,vol=1,rate=1){ if(!audio()) return null; const b=await load(n); if(!b) return null; const s=ac.createBufferSource(), g=ac.createGain(); s.buffer=b; s.playbackRate.value=rate; g.gain.value=vol; s.connect(g).connect(master); s.start(); return {s,g}; }
+const c=document.getElementById('c'), x=c.getContext('2d'), D=Math.min(devicePixelRatio||1,2);
+function size(){ c.width=c.clientWidth*D; c.height=c.clientHeight*D; } size(); addEventListener('resize',size);
+// ball phase: 0 = idle, travels out to the front wall (t 0..1), then back toward the player (t 1..2)
+let phase='idle', t=0, rally=0, lane=.5, done=false, trail=[], flash=0, speed=.011;
+window.__hitable=false;
+function serve(){ phase='fly'; t=0; lane=.3+((rally*37)%40)/100; }
+c.addEventListener('pointerdown',()=>{ audio(); if(done) return;
+  if(phase==='idle'){ serve(); play('hit',.9); document.getElementById('hint').textContent='TAP IN THE ORANGE ZONE'; return; }
+  if(window.__hitable){ rally++; document.getElementById('score').textContent=rally; play('hit',.9,1+rally*.02); if(rally%3===0) play('squeak',.6); flash=1; speed=.011+rally*.0006;
+    if(rally>=10){ done=true; phase='idle'; window.__hitable=false; play('cheer',.85); document.getElementById('hint').style.display='none'; document.getElementById('end').classList.add('on'); return; }
+    serve(); } });
+(function loop(){ const W=c.width,H=c.height; x.clearRect(0,0,W,H);
+  // strike zone
+  x.fillStyle=`rgba(245,132,38,${.16+flash*.3})`; x.fillRect(0,H*.70,W,H*.16); flash*=.92;
+  if(phase==='fly'){ t+=speed*(t<1?1.15:.9); if(t>=2.12){ rally=0; document.getElementById('score').textContent=0; phase='idle'; document.getElementById('hint').textContent='TAP TO SERVE AGAIN'; }
+    const out=t<1?t:2-t, y=H*(.84-out*.5), sc=1-out*.62, bx=W*(lane+(t<1?(t-.5)*.08:(1.5-t)*.08));
+    window.__hitable = t>1.55 && t<2.1;
+    trail.push({x:bx,y,r:9*D*sc}); if(trail.length>8) trail.shift();
+    trail.forEach((p,k)=>{ x.fillStyle=`rgba(255,255,255,${k/trail.length*.25})`; x.beginPath(); x.arc(p.x,p.y,p.r,0,7); x.fill(); });
+    x.fillStyle='#111'; x.beginPath(); x.arc(bx,y,10*D*sc,0,7); x.fill(); x.strokeStyle='#ffd23a'; x.lineWidth=2*D; x.beginPath(); x.arc(bx,y,10*D*sc,0,7); x.stroke(); }
+  else window.__hitable=false;
+  requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
